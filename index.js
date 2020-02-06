@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const comentsRouter = require('./routes/massage');
+const db = process.env.MONGODB_URL;
 
 const PORT = process.env.PORT || 5000;
 
@@ -18,7 +19,7 @@ app.use('/coments', comentsRouter);
 
 async function start () {
     try{
-        await mongoose.connect('mongodb+srv://Fedir:12345@cluster0-4y9bx.mongodb.net/massage', {
+        await mongoose.connect(db, {
             useNewUrlParser: true,
             useFindAndModify: false
         })
