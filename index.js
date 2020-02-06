@@ -16,7 +16,6 @@ app.use(function (req, res, next) {
 });
 
 app.use('/coments', comentsRouter);
-
 async function start () {
     try{
         await mongoose.connect(db, {
