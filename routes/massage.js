@@ -1,6 +1,9 @@
 const {Router} = require('express');
+const mongoose = require('mongoose');
 
 const Item = require('../models/ITask');
+const findComments = require('../helpers/find-coments');
+const findLikeDislike = require('../helpers/like-dislike');
 
 const router = Router();
 
@@ -28,70 +31,123 @@ router.post('/add', async (req, res) => {
 router.get('/', async (req, res) => {
     try{
         const items = await Item.find();
-
         res.json(items);
     } catch (e) {
         res.json(e.toString());
     }
 });
 
-router.patch('/:id', async (req, res) => {
-    try{
-        const { id } = req.params;
-        const item = await Item.findByIdAndUpdate(id);
-        item.name = req.body.name;
-
-        await item.save();
-        const items = await Item.find();
-        res.json(items);
-    } catch (e) {
-        res.json(e.toString());
-    }
-});
-
-router.patch('/add/:id', async (req, res) => {
+router.put('/:id', async (req, res) => {
     try {
         const {
             id
         } = req.params;
-        const item = await Item.findByIdAndUpdate(id);
-        item.comments = req.body.comments;
-
-        await item.save();
+        const {
+            parentId,
+            task
+        } = req.body;
         const items = await Item.find();
-        res.json(items);
+        const parent = items.find((obj) => obj._id == parentId);
+        let item = await Item.findByIdAndUpdate(parentId);
+        if (task._id == parentId) {
+            item.name = task.name;
+        } else{            
+            findComments(parent, id, task.name, 'name');
+            item.comments = parent.comments;
+        }
+        await item.save();
+        const newItems = await Item.find();
+        res.json(newItems);
     } catch (e) {
+
         res.json(e.toString());
     }
 });
 
-router.patch('/like/:id', async (req, res) => {
+router.put('/add/:id', async (req, res) => {
     try {
         const {
             id
         } = req.params;
-        const item = await Item.findByIdAndUpdate(id);
-        item.like = req.body.like+1;
+        const {
+            parentId,
+            comment
+        } = req.body;
+
+        comment._id = new mongoose.Types.ObjectId();
+        comment.date = new Date();
+        const items = await Item.find();
+        const parent = items.find((obj) =>obj._id == parentId);
+
+        findComments(parent, id, comment, 'comments');
+        const item = await Item.findByIdAndUpdate(parentId);
+
+        item.comments = parent.comments;
 
         await item.save();
-        const items = await Item.find();
-        res.json(items);
+        const newItems = await Item.find();
+        res.json(newItems);
     } catch (e) {
+
         res.json(e.toString());
     }
 });
 
-router.patch('/dislike/:id', async (req, res) => {
+router.put('/like/:id', async (req, res) => {
     try {
         const {
             id
         } = req.params;
-        const item = await Item.findByIdAndUpdate(id);
-        item.dislike = req.body.dislike + 1;
+        const {
+            parentId,
+            task
+        } = req.body;
+
+        const items = await Item.find();
+        const parent = items.find((obj) => obj._id == parentId);
+        let item = await Item.findByIdAndUpdate(parentId);
+
+        
+
+        if (task._id == parentId) {
+           item.like = ++task.like;
+        } else {
+            findLikeDislike(parent.comments, id, task, 'like');
+            item.comments = parent.comments;
+        }
+        await item.save();
+        const newItems = await Item.find();
+        res.json(newItems);
+    } catch (e) {
+
+        res.json(e.toString());
+    }
+});
+
+router.put('/dislike/:id', async (req, res) => {
+    try {
+        const {
+            id
+        } = req.params;
+        const {
+            parentId,
+            task
+        } = req.body;
+
+        const items = await Item.find();
+        const parent = items.find((obj) => obj._id == parentId);
+        let item = await Item.findByIdAndUpdate(parentId);
+
+        if (task._id == parentId) {
+            item.dislike = ++task.dislike;
+        } else {
+            findLikeDislike(parent.comments, id, task, 'dislike');
+            item.comments = parent.comments;
+        }
 
         await item.save();
-        const items = await Item.find();
-        res.json(items);
+        const newItems = await Item.find();
+        res.json(newItems);
     } catch (e) {
         res.json(e.toString());
     }
